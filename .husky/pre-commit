@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+
+# Run lint-staged to format code
+npx lint-staged
+
+# Check for TypeScript compile errors
+npx tsc --noEmit
+
+# Compile Solidity contracts
+npx hardhat compile
+
+# Run tests
+npx hardhat test
