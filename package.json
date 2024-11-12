@@ -20,5 +20,8 @@
     "*.sol": [
       "forge fmt"
     ]
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.1.0"
   }
 }
