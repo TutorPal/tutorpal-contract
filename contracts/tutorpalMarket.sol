@@ -1,48 +1,24 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.27;
 
-contract TutorpalMarket {
-    error NotANewUser(address userAddress);
+// import {ICourseNFTFactory} from "./interfaces/ICourseOwnership.sol";
+// import {IDecentralizedProfiles} from "./interfaces/IDecentralizedProfiles.sol";
+// import {IEscrowPayment} from "./interfaces/IEscrowPayment.sol";
+// import {IRatingAndReview} from "./interfaces/IRatingReview.sol";
+import {DecentralizedProfiles} from "./abstract/DecentralizedProfiles.sol";
 
-    event UserRegistered(address indexed userAddress, string displayName, RoleType roleType);
+contract TutorpalMarket is DecentralizedProfiles {
+//  /*//////////////////////////////////////////////////////////////
+//                         PAUSE
+//     //////////////////////////////////////////////////////////////*/
 
-    enum RoleType {
-        NotRegitered,
-        Student,
-        Tutor
-    }
+//     /// @notice Pause trading on the Exchange
+//     function pauseTrading() external onlyAdmin {
+//         _pauseTrading();
+//     }
 
-    struct User {
-        string displayName;
-        RoleType roleType;
-        bool isRegistered;
-    }
-
-    mapping(address usersAddress => User users) users;
-
-    /**
-     * @notice Registers a new user with a display name and role type.
-     * @param _displayName The display name of the user.
-     * @param _roleType The role type of the user (FabricSeller, Designer, Buyer).
-     * @dev Emits an error if the user is already registered.
-     */
-    function registerUser(string memory _displayName, RoleType _roleType) external {
-        require(users[msg.sender].isRegistered == false, NotANewUser(msg.sender));
-        users[msg.sender] = User({displayName: _displayName, roleType: _roleType, isRegistered: true});
-        emit UserRegistered(msg.sender, _displayName, _roleType);
-    }
-
-    //  /*//////////////////////////////////////////////////////////////
-    //                         PAUSE
-    //     //////////////////////////////////////////////////////////////*/
-
-    //     /// @notice Pause trading on the Exchange
-    //     function pauseTrading() external onlyAdmin {
-    //         _pauseTrading();
-    //     }
-
-    //     /// @notice Unpause trading on the Exchange
-    //     function unpauseTrading() external onlyAdmin {
-    //         _unpauseTrading();
-    //     }
+//     /// @notice Unpause trading on the Exchange
+//     function unpauseTrading() external onlyAdmin {
+//         _unpauseTrading();
+//     }
 }
