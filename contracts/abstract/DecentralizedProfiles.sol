@@ -17,8 +17,8 @@ abstract contract DecentralizedProfiles is IDecentralizedProfiles {
         _;
     }
 
-    modifier ValidTutor() {
-        require(users[msg.sender].roleType == RoleType.Tutor);
+    modifier ValidInstructor() {
+        require(users[msg.sender].roleType == RoleType.Instructor);
         _;
     }
 

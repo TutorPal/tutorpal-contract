@@ -7,6 +7,13 @@ abstract contract SessionBooking is ISessionBooking {
     mapping(uint256 => SessionOffer) public offers;
     uint256 public offerCounter;
 
+    modifier validateSessionReview(uint256 offerId, address instructor) {
+        require(offers[offerId].student == msg.sender, SessionReview__InvalidReviewer());
+        require(offers[offerId].isCompleted == true, SessionReview__SessionNotCompleted());
+        require(offers[offerId].instructor == instructor, SessionReview__InvalidInstructorAddress());
+        _;
+    }
+
     // Function for a student to make an offer for a tutoring session
     function makeSessionOffer(address instructor, uint256 amount, uint256 duration)
         external

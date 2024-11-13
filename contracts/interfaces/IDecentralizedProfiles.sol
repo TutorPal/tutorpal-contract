@@ -5,7 +5,7 @@ interface IDecentralizedProfiles {
     enum RoleType {
         NotRegistered,
         Student,
-        Tutor
+        Instructor
     }
 
     struct User {

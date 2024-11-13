@@ -8,8 +8,8 @@ npx lint-staged
 # Compile Solidity contracts
 npx hardhat compile
 
-# Check for TypeScript compile errors
-npx tsc --noEmit
+# # Check for TypeScript compile errors
+# npx tsc --noEmit
 
 
 

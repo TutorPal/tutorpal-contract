@@ -24,6 +24,9 @@ interface ISessionBooking {
     error SessionBooking__OfferAccepted();
     error SessionBooking__NotOfferAccepted();
     error SessionBooking__SessionAlreadyCompleted();
+    error SessionReview__InvalidReviewer();
+    error SessionReview__SessionNotCompleted();
+    error SessionReview__InvalidInstructorAddress();
 
     // Events for session offers, acceptance, payment release, and refund
 
