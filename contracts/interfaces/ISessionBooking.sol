@@ -17,6 +17,7 @@ interface ISessionBooking {
 
     error SessionBooking__IncorrectAmount();
     error SessionBooking__InvalidInstructorAdderess();
+    error SessionBooking__NotStudent();
     error SessionBooking__LessThanTenMintues();
     error SessionBooking__NotExceptedInstructor();
     error SessionBooking__NotExceptedStudent();
@@ -27,6 +28,7 @@ interface ISessionBooking {
     error SessionReview__InvalidReviewer();
     error SessionReview__SessionNotCompleted();
     error SessionReview__InvalidInstructorAddress();
+    error SessionBooking__PaymentFailed();
 
     // Events for session offers, acceptance, payment release, and refund
 

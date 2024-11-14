@@ -3,7 +3,13 @@ pragma solidity ^0.8.0;
 
 import {IRatingAndReview} from "../interfaces/IRatingReview.sol";
 
-abstract contract RatingAndReview is IRatingAndReview {
+interface ITutorParmarket {
+    function isStudent(address _user) external view returns (bool);
+
+    function isInstructor(address _user) external view returns (bool);
+}
+
+contract RatingAndReview is IRatingAndReview {
     mapping(uint256 sessionId => SessionReview) public sessionReviews;
     mapping(uint256 courseId => CourseReview) public courseReviews;
     mapping(address instructor => InstructorRating) public instructorRatings;
@@ -18,12 +24,47 @@ abstract contract RatingAndReview is IRatingAndReview {
      * @param rating The rating for the session, between 1 and 5.
      * @param reviewText The text of the review.
      */
+    // Submit a course review
     function submitSessionReview(uint256 sessionId, address instructor, uint8 rating, string calldata reviewText)
         external
-        virtual;
+    {
+        //ValidStudent();
 
+        // validateSessionReview(sessionId, tutor);
+        if (rating < 1 || rating > 5) revert SessionReview__InvalidRating(rating);
+
+        sessionReviews[sessionId] = SessionReview({
+            sessionId: sessionId,
+            student: msg.sender,
+            rating: rating,
+            reviewText: reviewText,
+            timestamp: block.timestamp
+        });
+
+        _updateInstructorRating(instructor, rating);
+
+        emit SessionReviewSubmitted(sessionId, msg.sender, rating, reviewText);
+    }
+
+    // TODO  add more check for the Reviews and  do somestate update check the  abstract contract errorr //TODO
     // Submit a course review
-    function submitCourseReview(uint256 courseId, uint8 rating, string calldata reviewText) external virtual;
+    function submitCourseReview(uint256 courseId, uint8 rating, string calldata reviewText) external {
+        // ValidStudent();
+        // validateCourseReview(courseId);
+        require(rating >= 1 && rating <= 5, SessionReview__InvalidRating(rating));
+
+        courseReviews[courseId] = CourseReview({
+            courseId: courseId,
+            student: msg.sender,
+            rating: rating,
+            reviewText: reviewText,
+            timestamp: block.timestamp
+        });
+
+        _updateCourseRating(courseId, rating);
+
+        emit CourseReviewSubmitted(courseId, msg.sender, rating, reviewText);
+    }
 
     /**
      * @notice Updates the instructor's rating when a new review is submitted
@@ -71,4 +112,13 @@ abstract contract RatingAndReview is IRatingAndReview {
     function getCourseRating(uint256 courseId) external view returns (uint8) {
         return courseRatings[courseId].rating;
     }
+
+    function submitSessionReview(uint256 sessionId, address instructor, uint256 rating, string calldata reviewText)
+        external
+        override
+    {}
+
+    function submitCourseReview(uint256 courseId, uint256 rating, string calldata reviewText) external override {}
+
+    function getInstructorRating(address instructor) external view override returns (uint8) {}
 }
