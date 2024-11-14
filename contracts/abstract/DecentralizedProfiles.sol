@@ -17,14 +17,20 @@ abstract contract DecentralizedProfiles is IDecentralizedProfiles {
         _;
     }
 
-    modifier ValidTutor() {
-        require(users[msg.sender].roleType == RoleType.Tutor);
-        _;
+    function isStudent(address _user) external view returns (bool) {
+        return users[_user].roleType == RoleType.Student;
     }
 
-    modifier ValidStudent() {
-        require(users[msg.sender].roleType == RoleType.Student);
-        _;
+    function isInstructor(address _user) external view returns (bool) {
+        return users[_user].roleType == RoleType.Instructor;
+    }
+
+    function ValidInstructor() internal view {
+        require(users[msg.sender].roleType == RoleType.Instructor, NotInstuctor());
+    }
+
+    function ValidStudent() internal view {
+        require(users[msg.sender].roleType == RoleType.Student, NotStudent());
     }
     /**
      * @notice Registers a new user with a display name and role type.
@@ -53,10 +59,6 @@ abstract contract DecentralizedProfiles is IDecentralizedProfiles {
         return (thisUser.displayName, thisUser.roleType, thisUser.isRegistered);
     }
 
-    function isAdmin(address usr) external view returns (bool) {
-        return admins[usr] == 1;
-    }
-
     /// @notice Adds a new admin
     /// Can only be called by a current admin
     /// @param admin_ - The new admin
@@ -71,12 +73,5 @@ abstract contract DecentralizedProfiles is IDecentralizedProfiles {
     function removeAdmin(address admin) external onlyAdmin {
         admins[admin] = 0;
         emit RemovedAdmin(admin, msg.sender);
-    }
-    /// @notice Removes the admin role for the caller
-    /// Can only be called by an existing admin
-
-    function renounceAdminRole() external onlyAdmin {
-        admins[msg.sender] = 0;
-        emit RemovedAdmin(msg.sender, msg.sender);
     }
 }

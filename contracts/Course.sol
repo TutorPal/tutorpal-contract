@@ -13,10 +13,12 @@ contract Course is ERC721URIStorage {
     uint256 public price;
     uint256 public royalty;
     uint256 public totalMinted;
+    address public TutorPal;
 
     mapping(address => bool) public students; // Tracks students who have purchased the course
 
     constructor(
+        address _TutorPal,
         string memory _name,
         string memory _symbol,
         address _instructor,
@@ -25,6 +27,7 @@ contract Course is ERC721URIStorage {
         uint256 _price,
         uint256 _royalty
     ) ERC721(_name, _symbol) {
+        TutorPal = _TutorPal;
         instructor = _instructor;
         metadataURI = _metadataURI;
         maxSupply = _maxSupply;
@@ -32,14 +35,15 @@ contract Course is ERC721URIStorage {
         royalty = _royalty;
     }
 
-    function mintCourseNFT() public payable returns (uint256) {
+    function mintCourseNFT(address _user) public returns (uint256) {
+        require(msg.sender == TutorPal, "Only TutorPal contract can mint");
         require(totalMinted < maxSupply, "Max supply reached");
-        require(msg.value >= price, "Insufficient funds");
-        require(!students[msg.sender], "Already enrolled in this course"); // Ensure student can't enroll twice
 
-        students[msg.sender] = true; // Record the student's enrollment
+        require(!students[_user], "Already enrolled in this course"); // Ensure student can't enroll twice
+
+        students[_user] = true; // Record the student's enrollment
         totalMinted++;
-        _safeMint(msg.sender, totalMinted);
+        _safeMint(_user, totalMinted);
         _setTokenURI(totalMinted, string(abi.encodePacked(metadataURI, totalMinted.toString())));
         return totalMinted;
     }

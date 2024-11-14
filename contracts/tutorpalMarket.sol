@@ -1,11 +1,30 @@
+/// @title TutorPal - A decentralized tutoring marketplace
+/// @notice This contract enables instructors to create and sell course NFTs, and students to book tutoring sessions
+/// @dev Inherits from DecentralizedProfiles for user management and SessionBooking for tutoring session functionality
+/// @author Iam0TI
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.27;
 
 import {DecentralizedProfiles} from "./abstract/DecentralizedProfiles.sol";
+import {SessionBooking} from "./abstract/SessionBooking.sol";
+import {RatingAndReview} from "./abstract/RatingAndReview.sol";
 import {Course} from "./Course.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 contract TutorPal is DecentralizedProfiles {
     error TutorPal__InvalidCourseId(uint256 courseId);
+    error TutorPal__PaymentFailed();
+    error CourseReview_NotOwned();
+    error TutorPal__InvalidMaxSupply();
+    error TutorPal__InvalidPrice();
+    error TutorPal__InvalidRoyalty();
+    error TutorPal__EmptyTitle();
+    error TutorPal__EmptySymbol();
+    error TutorPal__EmptyMetadataURI();
+    error TutorPal__InsufficientPayment();
+    error TutorPal__CourseSoldOut();
+    error TutorPal__InvalidRating();
+    error TutorPal__InvalidInstructor();
 
     event CourseListed(
         address indexed courseAddress,
@@ -33,8 +52,9 @@ contract TutorPal is DecentralizedProfiles {
         uint256 maxSupply; // Maximum number of NFTs available for this course
         uint256 price; // Price per NFT in wei
         uint256 totalMinted; // Total number of NFTs minted for this course
-        Course course;
         uint256 timestamp;
+        Course course;
+        uint8 rating;
     }
 
     uint256 public createCourseCount;
@@ -43,98 +63,94 @@ contract TutorPal is DecentralizedProfiles {
     mapping(uint256 id => CourseStruct course) public courseStructs;
     address[] public allCourses; // Array to keep track of all course addresses
 
+    function validateCourseReview(uint256 courseId) private view {
+        require(IERC721(courseStructs[courseId].course).balanceOf(msg.sender) > 0, CourseReview_NotOwned());
+    }
+
+    /// @notice Creates a new course NFT collection
+    /// @param _title The title of the course
+    /// @param _symbol The symbol for the course NFT
+    /// @param _metadataURI The URI pointing to the course metadata
+    /// @param _maxSupply Maximum number of NFTs that can be minted for this course
+    /// @param _price Price per NFT in wei
+    /// @param _royalty Royalty percentage for secondary sales (in basis points, e.g., 500 for 5%)
+    /// @return newCourse The address of the newly created Course contract
     function createCourse(
         string memory _title,
         string memory _symbol,
         string memory _metadataURI,
         uint256 _maxSupply,
         uint256 _price,
-        uint8 _royalty
-    ) public ValidInstructor returns (Course newCourse) {
-        uint256 currentId = createCourseCount;
-        require(_maxSupply > 0, "Max supply must be greater than 0");
-        require(_price > 0, "Price must be greater than 0");
-        require(_royalty <= 2500, "");
-        require(_royalty > 0, "Royalties must be greater than 0");
-        require(bytes(_title).length > 0, "Title cannot be empty");
-        require(bytes(_symbol).length > 0, "Symbol cannot be empty");
-        require(bytes(_metadataURI).length > 0, "Metadata URI cannot be empty");
+        uint16 _royalty
+    ) external returns (Course newCourse, uint256 currentId) {
+        ValidInstructor();
 
-        newCourse = new Course(_title, _symbol, msg.sender, _metadataURI, _maxSupply, _price, _royalty);
+        currentId = createCourseCount;
+        require(_maxSupply > 0, TutorPal__InvalidMaxSupply());
+        require(_price > 0, TutorPal__InvalidPrice());
+        require(_royalty <= 2500, TutorPal__InvalidRoyalty());
+        require(_royalty > 0, TutorPal__InvalidRoyalty());
+        require(bytes(_title).length > 0, TutorPal__EmptyTitle());
+        require(bytes(_symbol).length > 0, TutorPal__EmptySymbol());
+        require(bytes(_metadataURI).length > 0, TutorPal__EmptyMetadataURI());
+
+        newCourse = new Course(address(this), _title, _symbol, msg.sender, _metadataURI, _maxSupply, _price, _royalty);
 
         courseStructs[currentId] = CourseStruct(
-            _title, _symbol, _metadataURI, msg.sender, _royalty, _maxSupply, _price, 0, newCourse, block.timestamp
+            _title, _symbol, _metadataURI, msg.sender, _royalty, _maxSupply, _price, 0, block.timestamp, newCourse, 0
         );
         instructors[msg.sender].courses.push(address(newCourse));
         instructors[msg.sender].courseIds.push(currentId);
         allCourses.push(address(newCourse)); // Add course to the list of all courses
-        ++createCourseCount;
+        createCourseCount = createCourseCount + 1;
 
         emit CourseListed(
             address(newCourse), currentId, msg.sender, _title, _maxSupply, _price, _royalty, block.timestamp
         );
     }
 
-    function buyCourse(uint256 _courseId) public payable {
+    /// @notice Allows a student to purchase a course NFT
+    /// @param _courseId The ID of the course to purchase
+    function buyCourse(uint256 _courseId) external payable {
         require(_courseId < createCourseCount, TutorPal__InvalidCourseId(_courseId));
         CourseStruct memory courseStruct = courseStructs[_courseId];
         Course course = Course(payable(address(courseStruct.course)));
-        require(msg.value >= courseStruct.price, "Insufficient payment");
-        require(courseStruct.maxSupply < courseStruct.maxSupply, "Course sold out");
+        require(msg.value >= courseStruct.price, TutorPal__InsufficientPayment());
+        require(courseStruct.totalMinted < courseStruct.maxSupply, TutorPal__CourseSoldOut());
 
-        uint256 tokenId = course.mintCourseNFT{value: msg.value}();
+        uint256 tokenId = course.mintCourseNFT(msg.sender);
         courseStructs[_courseId].maxSupply++;
+        (bool success,) = payable(courseStruct.instructor).call{value: courseStruct.price}("");
+        require(success, TutorPal__PaymentFailed());
 
         emit NFTPurchased(address(course), tokenId, msg.sender, courseStruct.price);
     }
 
-    function getInstructorCourses(address _instructor) public view returns (address[] memory) {
+    /// @notice Retrieves all courses created by a specific instructor
+    /// @param _instructor The address of the instructor
+    /// @return An array of course addresses created by the instructor
+    function getInstructorCourses(address _instructor) external view returns (address[] memory) {
         return instructors[_instructor].courses;
     }
 
-    function getInstructorCourseIds(address _instructor) public view returns (uint256[] memory) {
+    /// @notice Retrieves all course IDs created by a specific instructor
+    /// @param _instructor The address of the instructor
+    /// @return An array of course IDs created by the instructor
+    function getInstructorCourseIds(address _instructor) external view returns (uint256[] memory) {
         return instructors[_instructor].courseIds;
     }
 
-    function getAllCourses() public view returns (address[] memory) {
-        return allCourses; // Return all courses for students to view
+    /// @notice Retrieves all courses available on the platform
+    /// @return An array of all course addresses
+    function getAllCourses() external view returns (address[] memory) {
+        return allCourses;
     }
 
-    function getCoursebyId(uint256 _courseId) public view returns (CourseStruct memory) {
+    /// @notice Retrieves detailed information about a specific course
+    /// @param _courseId The ID of the course
+    /// @return The CourseStruct containing all course details
+    function getCoursebyId(uint256 _courseId) external view returns (CourseStruct memory) {
         require(_courseId < createCourseCount, TutorPal__InvalidCourseId(_courseId));
         return courseStructs[_courseId];
     }
 }
-// contract instructorpalMarket is DecentralizedProfiles {
-//     mapping(address => Course) public courses;
-
-// event CourseListed(
-//         address indexed courseAddress,
-//         string title,
-//         address indexed instructor,
-//         uint256 maxSupply,
-//         uint256 price,
-//         uint256 royalties
-//     );
-//     event NFTPurchased(address indexed courseAddress, uint256 indexed tokenId, address indexed buyer, uint256 price);
-//    struct Course {
-//         string title; // Title of the course
-//         address instructor; // Address of the instructor who created the course
-//         uint256 maxSupply; // Maximum number of NFTs available for this course
-//         uint256 price; // Price per NFT
-//         uint256 royalties; // Royalties percentage for secondary sales (e.g., 5 for 5%)
-//     }
-
-//     function createCourseCollection(string calldata title, uint256 price, uint256 royalties, uint256 maxSupply)
-//         external
-//         returns (address courseAddress){}
-
-// // Purchase an NFT from a course collection
-//     function purchaseNFT(address courseAddress) external payable{}
-
-//     function getCourseDetails(address courseAddress)
-//         external
-//         view
-//         returns (string memory title, address instructor, uint256 price, uint256 royalties, uint256 maxSupply){}
-
-// }

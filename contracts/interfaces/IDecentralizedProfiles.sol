@@ -5,7 +5,7 @@ interface IDecentralizedProfiles {
     enum RoleType {
         NotRegistered,
         Student,
-        Tutor
+        Instructor
     }
 
     struct User {
@@ -17,7 +17,8 @@ interface IDecentralizedProfiles {
 
     error NotANewUser(address user);
     error NotAdmin();
-    error NotOperator();
+    error NotInstuctor();
+    error NotStudent();
 
     /// @notice Emitted when a new user is registered
     /// @param user The address of the registered user
@@ -44,8 +45,6 @@ interface IDecentralizedProfiles {
         view
         returns (string memory displayName, RoleType roleType, bool isRegistered);
 
-    function renounceAdminRole() external;
     function addAdmin(address) external;
     function removeAdmin(address) external;
-    function isAdmin(address usr) external view returns (bool);
 }
