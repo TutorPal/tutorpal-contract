@@ -63,7 +63,7 @@ contract TutorPal is DecentralizedProfiles {
     mapping(uint256 id => CourseStruct course) public courseStructs;
     address[] public allCourses; // Array to keep track of all course addresses
 
-    function validateCourseReview(uint256 courseId) private view {
+    function validateCourseReview(uint256 courseId) external view {
         require(IERC721(courseStructs[courseId].course).balanceOf(msg.sender) > 0, CourseReview_NotOwned());
     }
 

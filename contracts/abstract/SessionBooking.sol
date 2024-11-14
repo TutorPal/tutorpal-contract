@@ -18,7 +18,7 @@ contract SessionBooking is ISessionBooking {
         tutorParmarket = ITutorParmarket(_tutorParmarket);
     }
 
-    function validateSessionReview(uint256 offerId, address instructor) internal view {
+    function validateSessionReview(uint256 offerId, address instructor) external view {
         require(offers[offerId].student == msg.sender, SessionReview__InvalidReviewer());
         require(offers[offerId].isCompleted == true, SessionReview__SessionNotCompleted());
         require(offers[offerId].instructor == instructor, SessionReview__InvalidInstructorAddress());

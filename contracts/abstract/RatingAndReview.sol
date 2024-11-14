@@ -7,6 +7,11 @@ interface ITutorParmarket {
     function isStudent(address _user) external view returns (bool);
 
     function isInstructor(address _user) external view returns (bool);
+    function validateCourseReview(uint256 courseId) external view;
+}
+
+interface ISessionBooking {
+    function validateSessionReview(uint256 offerId, address instructor) external view;
 }
 
 contract RatingAndReview is IRatingAndReview {
@@ -14,6 +19,14 @@ contract RatingAndReview is IRatingAndReview {
     mapping(uint256 courseId => CourseReview) public courseReviews;
     mapping(address instructor => InstructorRating) public instructorRatings;
     mapping(uint256 courseId => CourseRating) public courseRatings;
+
+    ITutorParmarket tutorParmarket;
+    ISessionBooking sessionBooking;
+
+    constructor(address _tutorParmarket, address _sessionBooking) {
+        tutorParmarket = ITutorParmarket(_tutorParmarket);
+        sessionBooking = ISessionBooking(_sessionBooking);
+    }
 
     // Submit a session review
     /**
@@ -29,8 +42,10 @@ contract RatingAndReview is IRatingAndReview {
         external
     {
         //ValidStudent();
+        tutorParmarket.isStudent(msg.sender);
 
-        // validateSessionReview(sessionId, tutor);
+        // Validate the session review
+        sessionBooking.validateSessionReview(sessionId, instructor);
         if (rating < 1 || rating > 5) revert SessionReview__InvalidRating(rating);
 
         sessionReviews[sessionId] = SessionReview({
@@ -49,8 +64,9 @@ contract RatingAndReview is IRatingAndReview {
     // TODO  add more check for the Reviews and  do somestate update check the  abstract contract errorr //TODO
     // Submit a course review
     function submitCourseReview(uint256 courseId, uint8 rating, string calldata reviewText) external {
-        // ValidStudent();
-        // validateCourseReview(courseId);
+        tutorParmarket.isStudent(msg.sender);
+        tutorParmarket.validateCourseReview(courseId);
+
         require(rating >= 1 && rating <= 5, SessionReview__InvalidRating(rating));
 
         courseReviews[courseId] = CourseReview({
