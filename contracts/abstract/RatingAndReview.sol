@@ -4,9 +4,14 @@ pragma solidity ^0.8.0;
 import {IRatingAndReview} from "../interfaces/IRatingReview.sol";
 
 interface ITutorParmarket {
-    function isStudent(address _user) external view returns (bool);
+    function ValidInstructor(address _user) external view;
 
-    function isInstructor(address _user) external view returns (bool);
+    function ValidStudent(address _user) external view;
+    function validateCourseReview(uint256 courseId, address user) external view;
+}
+
+interface ISessionBooking {
+    function validateSessionReview(address user, uint256 offerId, address instructor) external view;
 }
 
 contract RatingAndReview is IRatingAndReview {
@@ -14,6 +19,14 @@ contract RatingAndReview is IRatingAndReview {
     mapping(uint256 courseId => CourseReview) public courseReviews;
     mapping(address instructor => InstructorRating) public instructorRatings;
     mapping(uint256 courseId => CourseRating) public courseRatings;
+
+    ITutorParmarket tutorParmarket;
+    ISessionBooking sessionBooking;
+
+    constructor(address _tutorParmarket, address _sessionBooking) {
+        tutorParmarket = ITutorParmarket(_tutorParmarket);
+        sessionBooking = ISessionBooking(_sessionBooking);
+    }
 
     // Submit a session review
     /**
@@ -29,8 +42,10 @@ contract RatingAndReview is IRatingAndReview {
         external
     {
         //ValidStudent();
+        tutorParmarket.ValidStudent(msg.sender);
 
-        // validateSessionReview(sessionId, tutor);
+        // Validate the session review
+        sessionBooking.validateSessionReview(msg.sender, sessionId, instructor);
         if (rating < 1 || rating > 5) revert SessionReview__InvalidRating(rating);
 
         sessionReviews[sessionId] = SessionReview({
@@ -49,8 +64,9 @@ contract RatingAndReview is IRatingAndReview {
     // TODO  add more check for the Reviews and  do somestate update check the  abstract contract errorr //TODO
     // Submit a course review
     function submitCourseReview(uint256 courseId, uint8 rating, string calldata reviewText) external {
-        // ValidStudent();
-        // validateCourseReview(courseId);
+        tutorParmarket.ValidStudent(msg.sender);
+        tutorParmarket.validateCourseReview(courseId, msg.sender);
+
         require(rating >= 1 && rating <= 5, SessionReview__InvalidRating(rating));
 
         courseReviews[courseId] = CourseReview({
@@ -112,13 +128,4 @@ contract RatingAndReview is IRatingAndReview {
     function getCourseRating(uint256 courseId) external view returns (uint8) {
         return courseRatings[courseId].rating;
     }
-
-    function submitSessionReview(uint256 sessionId, address instructor, uint256 rating, string calldata reviewText)
-        external
-        override
-    {}
-
-    function submitCourseReview(uint256 courseId, uint256 rating, string calldata reviewText) external override {}
-
-    function getInstructorRating(address instructor) external view override returns (uint8) {}
 }

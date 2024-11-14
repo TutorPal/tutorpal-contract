@@ -4,9 +4,9 @@ pragma solidity 0.8.27;
 import {ISessionBooking} from "../interfaces/ISessionBooking.sol";
 
 interface ITutorParmarket {
-    function isStudent(address _user) external view returns (bool);
+    function ValidInstructor(address _user) external view;
 
-    function isInstructor(address _user) external view returns (bool);
+    function ValidStudent(address _user) external view;
 }
 
 contract SessionBooking is ISessionBooking {
@@ -18,8 +18,8 @@ contract SessionBooking is ISessionBooking {
         tutorParmarket = ITutorParmarket(_tutorParmarket);
     }
 
-    function validateSessionReview(uint256 offerId, address instructor) internal view {
-        require(offers[offerId].student == msg.sender, SessionReview__InvalidReviewer());
+    function validateSessionReview(address user, uint256 offerId, address instructor) external view {
+        require(offers[offerId].student == user, SessionReview__InvalidReviewer());
         require(offers[offerId].isCompleted == true, SessionReview__SessionNotCompleted());
         require(offers[offerId].instructor == instructor, SessionReview__InvalidInstructorAddress());
     }
@@ -34,8 +34,8 @@ contract SessionBooking is ISessionBooking {
         payable
         returns (uint256)
     {
-        require(tutorParmarket.isStudent(msg.sender), SessionBooking__NotStudent());
-        require(tutorParmarket.isInstructor(instructor), SessionBooking__InvalidInstructorAdderess());
+        tutorParmarket.ValidStudent(msg.sender);
+        tutorParmarket.ValidInstructor(instructor);
         require(msg.value == amount, SessionBooking__IncorrectAmount());
         require(duration >= 10 minutes, SessionBooking__LessThanTenMintues());
 
@@ -61,7 +61,7 @@ contract SessionBooking is ISessionBooking {
     /// @notice Allows an instructor to accept a session offer
     /// @param offerId The ID of the offer to accept
     function acceptSessionOffer(uint256 offerId) external override {
-        require(tutorParmarket.isInstructor(msg.sender), SessionBooking__InvalidInstructorAdderess());
+        tutorParmarket.ValidInstructor(msg.sender);
         SessionOffer storage offer = offers[offerId];
         require(offer.instructor == msg.sender, SessionBooking__NotExceptedInstructor());
         require(!offer.isCanceled, SessionBooking__OfferCanceled());
@@ -74,7 +74,7 @@ contract SessionBooking is ISessionBooking {
     /// @notice Allows a student to confirm session completion and release payment
     /// @param offerId The ID of the completed session offer
     function confirmSessionCompletion(uint256 offerId) external override {
-        require(tutorParmarket.isStudent(msg.sender), SessionBooking__NotStudent());
+        tutorParmarket.ValidStudent(msg.sender);
         SessionOffer storage offer = offers[offerId];
         address student = offer.student;
         address instructor = offer.instructor;
@@ -93,7 +93,7 @@ contract SessionBooking is ISessionBooking {
     /// @notice Allows a student to cancel their session offer and receive a refund
     /// @param offerId The ID of the offer to cancel
     function cancelSessionOffer(uint256 offerId) external override {
-        require(tutorParmarket.isStudent(msg.sender), SessionBooking__NotStudent());
+        tutorParmarket.ValidStudent(msg.sender);
         SessionOffer storage offer = offers[offerId];
         address student = offer.student;
         uint256 amount = offer.amount;

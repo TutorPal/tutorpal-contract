@@ -17,20 +17,20 @@ abstract contract DecentralizedProfiles is IDecentralizedProfiles {
         _;
     }
 
-    function isStudent(address _user) external view returns (bool) {
-        return users[_user].roleType == RoleType.Student;
+    // function isStudent(address _user) external view returns (bool) {
+    //    return users[_user].roleType == RoleType.Student;
+    // }
+
+    // function isInstructor(address _user) external view returns (bool) {
+    //     return users[_user].roleType == RoleType.Instructor;
+    // }
+
+    function ValidInstructor(address _user) public view {
+        require(users[_user].roleType == RoleType.Instructor, NotInstuctor());
     }
 
-    function isInstructor(address _user) external view returns (bool) {
-        return users[_user].roleType == RoleType.Instructor;
-    }
-
-    function ValidInstructor() internal view {
-        require(users[msg.sender].roleType == RoleType.Instructor, NotInstuctor());
-    }
-
-    function ValidStudent() internal view {
-        require(users[msg.sender].roleType == RoleType.Student, NotStudent());
+    function ValidStudent(address _user) public view {
+        require(users[_user].roleType == RoleType.Student, NotStudent());
     }
     /**
      * @notice Registers a new user with a display name and role type.
