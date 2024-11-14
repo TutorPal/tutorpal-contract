@@ -4,14 +4,14 @@ pragma solidity ^0.8.0;
 import {IRatingAndReview} from "../interfaces/IRatingReview.sol";
 
 interface ITutorParmarket {
-    function isStudent(address _user) external view returns (bool);
+    function ValidInstructor(address _user) external view;
 
-    function isInstructor(address _user) external view returns (bool);
-    function validateCourseReview(uint256 courseId) external view;
+    function ValidStudent(address _user) external view;
+    function validateCourseReview(uint256 courseId, address user) external view;
 }
 
 interface ISessionBooking {
-    function validateSessionReview(uint256 offerId, address instructor) external view;
+    function validateSessionReview(address user, uint256 offerId, address instructor) external view;
 }
 
 contract RatingAndReview is IRatingAndReview {
@@ -42,10 +42,10 @@ contract RatingAndReview is IRatingAndReview {
         external
     {
         //ValidStudent();
-        tutorParmarket.isStudent(msg.sender);
+        tutorParmarket.ValidStudent(msg.sender);
 
         // Validate the session review
-        sessionBooking.validateSessionReview(sessionId, instructor);
+        sessionBooking.validateSessionReview(msg.sender, sessionId, instructor);
         if (rating < 1 || rating > 5) revert SessionReview__InvalidRating(rating);
 
         sessionReviews[sessionId] = SessionReview({
@@ -64,8 +64,8 @@ contract RatingAndReview is IRatingAndReview {
     // TODO  add more check for the Reviews and  do somestate update check the  abstract contract errorr //TODO
     // Submit a course review
     function submitCourseReview(uint256 courseId, uint8 rating, string calldata reviewText) external {
-        tutorParmarket.isStudent(msg.sender);
-        tutorParmarket.validateCourseReview(courseId);
+        tutorParmarket.ValidStudent(msg.sender);
+        tutorParmarket.validateCourseReview(courseId, msg.sender);
 
         require(rating >= 1 && rating <= 5, SessionReview__InvalidRating(rating));
 
@@ -128,13 +128,4 @@ contract RatingAndReview is IRatingAndReview {
     function getCourseRating(uint256 courseId) external view returns (uint8) {
         return courseRatings[courseId].rating;
     }
-
-    function submitSessionReview(uint256 sessionId, address instructor, uint256 rating, string calldata reviewText)
-        external
-        override
-    {}
-
-    function submitCourseReview(uint256 courseId, uint256 rating, string calldata reviewText) external override {}
-
-    function getInstructorRating(address instructor) external view override returns (uint8) {}
 }

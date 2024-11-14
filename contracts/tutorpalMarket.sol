@@ -63,8 +63,8 @@ contract TutorPal is DecentralizedProfiles {
     mapping(uint256 id => CourseStruct course) public courseStructs;
     address[] public allCourses; // Array to keep track of all course addresses
 
-    function validateCourseReview(uint256 courseId) external view {
-        require(IERC721(courseStructs[courseId].course).balanceOf(msg.sender) > 0, CourseReview_NotOwned());
+    function validateCourseReview(uint256 courseId, address user) external view {
+        require(IERC721(courseStructs[courseId].course).balanceOf(user) > 0, CourseReview_NotOwned());
     }
 
     /// @notice Creates a new course NFT collection
@@ -83,7 +83,7 @@ contract TutorPal is DecentralizedProfiles {
         uint256 _price,
         uint16 _royalty
     ) external returns (Course newCourse, uint256 currentId) {
-        ValidInstructor();
+        ValidInstructor(msg.sender);
 
         currentId = createCourseCount;
         require(_maxSupply > 0, TutorPal__InvalidMaxSupply());
@@ -112,6 +112,7 @@ contract TutorPal is DecentralizedProfiles {
     /// @notice Allows a student to purchase a course NFT
     /// @param _courseId The ID of the course to purchase
     function buyCourse(uint256 _courseId) external payable {
+        ValidStudent(msg.sender);
         require(_courseId < createCourseCount, TutorPal__InvalidCourseId(_courseId));
         CourseStruct memory courseStruct = courseStructs[_courseId];
         Course course = Course(payable(address(courseStruct.course)));
