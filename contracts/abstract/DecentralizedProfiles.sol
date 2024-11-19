@@ -35,7 +35,7 @@ abstract contract DecentralizedProfiles is IDecentralizedProfiles {
     /**
      * @notice Registers a new user with a display name and role type.
      * @param _displayName The display name of the user.
-     * @param _roleType The role type of the user (FabricSeller, Designer, Buyer).
+     * @param _roleType The role type of the user
      * @dev Emits an error if the user is already registered.
      */
 
