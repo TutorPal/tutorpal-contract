@@ -11,6 +11,9 @@ interface ITutorParmarket {
 
 contract SessionBooking is ISessionBooking {
     mapping(uint256 => SessionOffer) public offers;
+
+    mapping(uint256 => SessionListing) public listings;
+    uint256 public listingCounter;
     uint256 public offerCounter;
     ITutorParmarket tutorParmarket;
 
@@ -22,6 +25,40 @@ contract SessionBooking is ISessionBooking {
         require(offers[offerId].student == user, SessionReview__InvalidReviewer());
         require(offers[offerId].isCompleted == true, SessionReview__SessionNotCompleted());
         require(offers[offerId].instructor == instructor, SessionReview__InvalidInstructorAddress());
+    }
+    /// @notice Allows an instructor to create a new session listing that students can view and make offers on.
+    /// @param amount The amount of ETH that the instructor is requesting for the session.
+    /// @param duration The proposed duration of the session in seconds.
+    /// @param title A short title for the session listing.
+    /// @param content Additional details about the session.
+    /// @return The ID of the created session listing.
+    /// @notice Allows an instructor to list session there can take
+
+    function createSessionListing(uint256 amount, uint32 duration, string memory title, string memory content)
+        external
+        returns (uint256)
+    {
+        tutorParmarket.ValidInstructor(msg.sender);
+        require(duration >= 10 minutes, SessionBooking__LessThanTenMintues());
+        require(bytes(title).length > 0, SessionBooking__TitleCannotBeEmpty());
+        require(bytes(content).length > 0, SessionBooking__ContentCannotBeEmpty());
+
+        uint256 listingId = listingCounter;
+
+        listings[listingId] = SessionListing({
+            listingId: listingId,
+            instructor: msg.sender,
+            amount: amount,
+            duration: duration,
+            isActive: true,
+            timestamp: block.timestamp,
+            title: title,
+            content: content
+        });
+        listingCounter++;
+
+        emit SessionListed(listingId, msg.sender, amount, duration, title, content);
+        return listingId;
     }
 
     /// @notice Allows a student to make a session offer to an instructor
@@ -108,6 +145,21 @@ contract SessionBooking is ISessionBooking {
         emit PaymentRefunded(offerId, student, amount);
     }
 
+    /// @notice Allows an instructor to reject a session offer
+    /// @param offerId The ID of the offer to reject
+    function rejectOffer(uint256 offerId) external {
+        tutorParmarket.ValidInstructor(msg.sender);
+        SessionOffer storage offer = offers[offerId];
+        require(offer.instructor == msg.sender, SessionBooking__NotExceptedInstructor());
+        require(!offer.isCanceled, SessionBooking__OfferCanceled());
+        require(!offer.isAccepted, SessionBooking__OfferAccepted());
+        offer.isCanceled = true;
+        (bool success,) = payable(offer.student).call{value: offer.amount}("");
+        require(success, SessionBooking__PaymentFailed());
+        emit SessionRejected(offerId, msg.sender, offer.amount);
+    }
+
+    // redunctant code
     function getSessionOffer(uint256 offerId) external view returns (SessionOffer memory) {
         return offers[offerId];
     }
