@@ -118,9 +118,9 @@ contract TutorPal is DecentralizedProfiles {
         Course course = Course(payable(address(courseStruct.course)));
         require(msg.value >= courseStruct.price, TutorPal__InsufficientPayment());
         require(courseStruct.totalMinted < courseStruct.maxSupply, TutorPal__CourseSoldOut());
-
-        uint256 tokenId = course.mintCourseNFT(msg.sender);
         courseStructs[_courseId].maxSupply++;
+        uint256 tokenId = course.mintCourseNFT(msg.sender);
+
         (bool success,) = payable(courseStruct.instructor).call{value: courseStruct.price}("");
         require(success, TutorPal__PaymentFailed());
 

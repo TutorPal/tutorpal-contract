@@ -2,6 +2,17 @@
 pragma solidity ^0.8.0;
 
 interface ISessionBooking {
+    struct SessionListing {
+        uint256 listingId;
+        uint256 amount;
+        uint32 duration;
+        address instructor;
+        bool isActive;
+        uint256 timestamp; // Timestamp when the listing was created
+        string title; // title of the session
+        string content; // description of the session
+    }
+
     struct SessionOffer {
         uint256 offerId;
         address student;
@@ -16,6 +27,8 @@ interface ISessionBooking {
     }
 
     error SessionBooking__IncorrectAmount();
+    error SessionBooking__TitleCannotBeEmpty();
+    error SessionBooking__ContentCannotBeEmpty();
     error SessionBooking__InvalidInstructorAdderess();
     error SessionBooking__NotStudent();
     error SessionBooking__LessThanTenMintues();
@@ -35,7 +48,17 @@ interface ISessionBooking {
     event SessionOffered(
         uint256 indexed offerId, address indexed student, address indexed instructor, uint256 amount, uint256 duration
     );
+    event SessionListed(
+        uint256 indexed listingId,
+        address indexed instructor,
+        uint256 amount,
+        uint256 duration,
+        string title,
+        string content
+    );
+
     event SessionAccepted(uint256 indexed offerId, address indexed instructor, uint256 amount);
+    event SessionRejected(uint256 indexed offerId, address indexed instructor, uint256 amount);
     event PaymentReleased(uint256 indexed offerId, address indexed instructor, uint256 amount);
     event PaymentRefunded(uint256 indexed offerId, address indexed student, uint256 amount);
 
